@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Serializer.hpp                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sasano <shunkotkg0141@gmail.com>           +#+  +:+       +#+        */
+/*   By: sasano <sasano@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/16 16:36:10 by sasano            #+#    #+#             */
-/*   Updated: 2025/08/16 16:47:12 by sasano           ###   ########.fr       */
+/*   Updated: 2025/11/01 20:10:57 by sasano           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <iostream>
+#include <stdint.h> // for uintptr_t
 
 struct Data
 {

@@ -3,17 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   ScalarConverter.hpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sasano <shunkotkg0141@gmail.com>           +#+  +:+       +#+        */
+/*   By: sasano <sasano@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/31 23:25:09 by sasano            #+#    #+#             */
-/*   Updated: 2025/08/16 15:31:04 by sasano           ###   ########.fr       */
+/*   Updated: 2025/11/01 22:04:15 by sasano           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 #include <iostream>
+#include <sstream> // for std::stringstream
 #include <string>
+#include <climits> // for INT_MIN, INT_MAX
+
 
 class ScalarConverter
 {
@@ -25,5 +28,5 @@ private:
     ~ScalarConverter();
 
 public:
-    static void convert(std::string input);
+    static void convert(const std::string &input);
 };

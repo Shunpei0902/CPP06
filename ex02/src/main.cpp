@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sasano <shunkotkg0141@gmail.com>           +#+  +:+       +#+        */
+/*   By: sasano <sasano@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/08/16 17:00:31 by sasano            #+#    #+#             */
-/*   Updated: 2025/08/16 17:28:28 by sasano           ###   ########.fr       */
+/*   Updated: 2025/11/01 20:19:33 by sasano           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 
 Base *generate()
 {
+    std::srand(static_cast<unsigned int>(time(0))); // 乱数の種を初期化
     int random = rand() % 3; // 0, 1, 2 のいずれかを生成
     std::cout << "Random number generated: " << random << std::endl;
     switch (random)
@@ -29,17 +30,17 @@ Base *generate()
         return new C(); // C クラスのインスタンスを生成
     default:
         std::cout << "Unknown type generated" << std::endl;
-        return nullptr; // 予期しない場合は nullptr を返す
+        return NULL; // 予期しない場合は nullを返す
     }
 }
 
 void identify(Base *p)
 {
-    if (dynamic_cast<A *>(p) != nullptr)
+    if (dynamic_cast<A *>(p))
         std::cout << "Type: A" << std::endl;
-    else if (dynamic_cast<B *>(p) != nullptr)
+    else if (dynamic_cast<B *>(p))
         std::cout << "Type: B" << std::endl;
-    else if (dynamic_cast<C *>(p) != nullptr)
+    else if (dynamic_cast<C *>(p))
         std::cout << "Type: C" << std::endl;
     else
         std::cout << "Unknown type" << std::endl;

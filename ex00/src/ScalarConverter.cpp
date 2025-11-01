@@ -3,146 +3,230 @@
 /*                                                        :::      ::::::::   */
 /*   ScalarConverter.cpp                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: sasano <shunkotkg0141@gmail.com>           +#+  +:+       +#+        */
+/*   By: sasano <sasano@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/01/31 23:37:51 by sasano            #+#    #+#             */
-/*   Updated: 2025/08/16 15:55:26 by sasano           ###   ########.fr       */
+/*   Updated: 2025/11/01 22:23:54 by sasano           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ScalarConverter.hpp"
 
-ScalarConverter::ScalarConverter()
+#include <iostream>
+#include <climits>
+#include <cctype>
+#include <cstdlib>
+#include <cerrno>
+#include <cmath>
+#include <limits>
+
+static bool isCharLiteral(const std::string &s)
 {
-    // インスタンス化を防ぐためのコンストラクタは空
+    // return s.size() == 3 && s[0]=='\'' && s[2]=='\'';
+    return s.size() == 1 && !isdigit(static_cast<unsigned char>(s[0]));
 }
 
-ScalarConverter::ScalarConverter(const ScalarConverter &copy)
+static bool isPseudoFloat(const std::string &s)
 {
-    *this = copy;
+    return s == "nanf" || s == "+inff" || s == "-inff" || s == "inff";
 }
 
-ScalarConverter &ScalarConverter::operator=(const ScalarConverter &copy)
+static bool isPseudoDouble(const std::string &s)
 {
-    if (this != &copy)
-    {
-    }; // 自己代入チェックはしてるけど中身が空 *this を返してチェーン代入はできる コピーできないようにしている
-    return (*this);
+    return s == "nan" || s == "+inf" || s == "-inf" || s == "inf";
 }
 
-ScalarConverter::~ScalarConverter() {}
-
-std::string isPrintableChar(std::string input)
+static bool isIntLiteral(const std::string &s)
 {
-    int i = 0;
-    try
-    {
-        i = std::stoi(input);
-    }
-    catch (const std::out_of_range &)
-    { // 入力が int の範囲外の場合
-        return "oof";
-    }
-    catch (const std::exception &e)
-    { // 入力が整数でない場合
-        std::cerr << "Error: " << e.what() << std::endl;
-        return "Nan";
-    }
+    if (s.empty())
+        return false;
+    char *end = 0;
+    errno = 0;
+    long v = std::strtol(s.c_str(), &end, 10);
+    (void)v;
+    return errno == 0 && end && *end == '\0';
+}
 
-    // 入力が int の範囲内であれば char に変換
-    char c = static_cast<char>(i);
-    // 印字可能な文字かどうかをチェック
-    if (std::isprint(c))
+static bool isFloatLiteral(const std::string &s)
+{
+    if (isPseudoFloat(s))
+        return true;
+    if (s.size() < 2 || s[s.size() - 1] != 'f')
+        return false;
+    std::string core = s.substr(0, s.size() - 1);
+    char *end = 0;
+    errno = 0;
+    std::strtod(core.c_str(), &end);
+    return errno == 0 && end && *end == '\0';
+}
+
+static bool isDoubleLiteral(const std::string &s)
+{
+    if (isPseudoDouble(s))
+        return true;
+    char *end = 0;
+    errno = 0;
+    std::strtod(s.c_str(), &end);
+    return errno == 0 && end && *end == '\0';
+}
+
+static void printChar(double d, bool possible)
+{
+    std::cout << "char: ";
+    if (!possible || d != d || d > UCHAR_MAX || d < 0)
     {
-        return "'" + std::string(1, c) + "'";
+        std::cout << "impossible\n";
+        return;
+    }
+    unsigned char c = static_cast<unsigned char>(d);
+    if (!std::isprint(c))
+    {
+        std::cout << "Non displayable\n";
     }
     else
     {
-        return "Non displayable";
+        std::cout << '\'' << static_cast<char>(c) << "'\n";
     }
 }
 
-std::string isInt(std::string input)
+static void printInt(double d, bool possible)
 {
-    try
+    std::cout << "int: ";
+    if (!possible || d != d || d > INT_MAX || d < INT_MIN)
     {
-        // int 変換を試す
-        int value = std::stoi(input);
-        return std::to_string(value);
+        std::cout << "impossible\n";
+        return;
     }
-    catch (const std::out_of_range &) // 入力が int の範囲外の場合
-    {
-        return "impossible";
-    }
-    catch (const std::invalid_argument &) // 入力が整数でない場合
-    {
-        return "impossible";
-    }
+    std::cout << static_cast<int>(d) << "\n";
 }
 
-std::string isFloat(std::string input)
+static bool isIntegralFinite(double d)
 {
-    try
-    {
-        // float 変換を試す
-        float value = std::stof(input);
-        return std::to_string(value) + "f";
-    }
-    catch (const std::out_of_range &)
-    {
-        return "impossible";
-    }
-    catch (const std::invalid_argument &)
-    {
-        return "impossible";
-    }
+    if (d != d)
+        return false; // NaN
+    if (d == std::numeric_limits<double>::infinity())
+        return false;
+    if (d == -std::numeric_limits<double>::infinity())
+        return false;
+    double i = static_cast<double>(static_cast<long>(d));
+    return (d - i) == 0.0;
 }
 
-std::string isDouble(std::string input)
+static void printFloat(double d)
 {
-    try
+    std::cout << "float: ";
+    float f = static_cast<float>(d);
+    if (d != d)
     {
-        // double 変換を試す
-        double value = std::stod(input);
-        return std::to_string(value);
+        std::cout << "nanf\n";
+        return;
     }
-    catch (const std::out_of_range &)
+    if (d == std::numeric_limits<double>::infinity())
     {
-        return "impossible";
+        std::cout << "+inff\n";
+        return;
     }
-    catch (const std::invalid_argument &)
+    if (d == -std::numeric_limits<double>::infinity())
     {
-        return "impossible";
+        std::cout << "-inff\n";
+        return;
     }
+    std::cout << f;
+    if (isIntegralFinite(d))
+        std::cout << ".0";
+    std::cout << "f\n";
 }
 
-void ScalarConverter::convert(std::string input)
+static void printDouble(double d)
 {
-    // 入力チェック
-    try
+    std::cout << "double: ";
+    if (d != d)
     {
-        size_t pos;
-        std::stod(input, &pos); // double 変換を試みる
+        std::cout << "nan\n";
+        return;
     }
-    catch (const std::exception &e)
+    if (d == std::numeric_limits<double>::infinity())
     {
-        return (std::cout << "This is not a valid input" << std::endl, void());
+        std::cout << "+inf\n";
+        return;
     }
+    if (d == -std::numeric_limits<double>::infinity())
+    {
+        std::cout << "-inf\n";
+        return;
+    }
+    std::cout.setf(std::ios::fixed, std::ios::floatfield);
+    std::cout.precision(isIntegralFinite(d) ? 1 : 6);
+    std::cout << d << "\n";
+    std::cout.unsetf(std::ios::floatfield);
+}
 
-    // 特殊ケースの処理
-    if (input.compare("nan") == 0 || input.compare("nanf") == 0 || input.compare("inf") == 0 || input.compare("inff") == 0 || input.compare("+inf") == 0 || input.compare("+inff") == 0 || input.compare("-inf") == 0 || input.compare("-inff") == 0)
+void ScalarConverter::convert(const std::string &s)
+{
+    if (s.empty())
     {
-        std::cout << "char: impossible" << std::endl;
-        std::cout << "int: impossible" << std::endl;
-        std::cout << "float: " << input << std::endl;
-        std::cout << "double: " << input << std::endl;
+        std::cerr << "Error: empty input" << std::endl;
         return;
     }
 
-    // 各型への変換結果の出力
-    std::cout << "Input: " << input << std::endl;
-    std::cout << "char: " << isPrintableChar(input) << std::endl;
-    std::cout << "int: " << isInt(input) << std::endl;
-    std::cout << "float: " << isFloat(input) << std::endl;
-    std::cout << "double: " << isDouble(input) << std::endl;
+    // Detect and normalize to double value for unified printing
+    double d = 0.0;
+    bool intPossible = true;
+
+    if (isCharLiteral(s))
+    {
+        char c = s[0];
+        d = static_cast<double>(static_cast<unsigned char>(c));
+    }
+    else if (isPseudoFloat(s))
+    {
+        if (s == "nanf")
+            d = std::numeric_limits<double>::quiet_NaN();
+        else if (s == "+inff" || s == "inff")
+            d = std::numeric_limits<double>::infinity();
+        else if (s == "-inff")
+            d = -std::numeric_limits<double>::infinity();
+        intPossible = false;
+    }
+    else if (isPseudoDouble(s))
+    {
+        if (s == "nan")
+            d = std::numeric_limits<double>::quiet_NaN();
+        else if (s == "+inf" || s == "inf")
+            d = std::numeric_limits<double>::infinity();
+        else if (s == "-inf")
+            d = -std::numeric_limits<double>::infinity();
+        intPossible = false;
+    }
+    else if (isIntLiteral(s))
+    {
+        char *end = 0;
+        errno = 0;
+        long v = std::strtol(s.c_str(), &end, 10);
+        (void)end;
+        d = static_cast<double>(v);
+    }
+    else if (isFloatLiteral(s))
+    {
+        std::string core = s.substr(0, s.size() - 1);
+        char *end = 0;
+        errno = 0;
+        d = std::strtod(core.c_str(), &end);
+    }
+    else if (isDoubleLiteral(s))
+    {
+        char *end = 0;
+        errno = 0;
+        d = std::strtod(s.c_str(), &end);
+    }
+    else
+    {
+        std::cerr << "Error: invalid literal" << std::endl;
+        return;
+    }
+
+    printChar(d, true);
+    printInt(d, intPossible);
+    printFloat(d);
+    printDouble(d);
 }
